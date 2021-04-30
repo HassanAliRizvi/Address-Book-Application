@@ -8,15 +8,20 @@ import java.sql.ResultSet;
 // 1) Delete entry, 2) modify entry, 3) format the code.
 
 public class Database {
-    //establishing connection to a database
+    /**
+    establishing connection to a database
+     **/
     private static Connection conn;
 
-    //use this boolean value to see if there's a table created
+    /**
+    use this boolean value to see if there's a table created
+     **/
     private static boolean hasData = false;
 
 
-
-    //displays the user from the database
+    /**
+    displays the user from the database
+     **/
     public ResultSet displayUsers() throws SQLException, ClassNotFoundException {
         //checking to see if there's a connection
         if (conn == null || conn.isClosed()) {
@@ -30,14 +35,18 @@ public class Database {
         return res;
     }
 
-    //gets connection from the jdbc file in the desktop to ensure that it's connected to the database
+    /**
+    gets connection from the jdbc file in the desktop to ensure that it's connected to the database
+     **/
     private static void getConnection() throws ClassNotFoundException, SQLException {
         Class.forName("org.sqlite.JDBC");
-        conn = DriverManager.getConnection("jdbc:sqlite:AddressBookDatabase.db");
+        conn = DriverManager.getConnection("jdbc:sqlite:AddressBookData.db");
         initialize();
     }
 
-    //initializes a SQLite table which has an id, first name, last name, phone, and email
+    /**
+    initializes a SQLite table which has an id, first name, last name, phone, and email
+     **/
     private static void initialize() throws SQLException {
         if (!hasData) {
             hasData = true;
@@ -104,27 +113,34 @@ public class Database {
      delete_User function deletes a user from the table using SQLite command. It also checks whether the table is empty as you can't delete
      in a empty table
      **/
-    public static void deleteUser(String user_input) throws SQLException, ClassNotFoundException {
+    public static void deleteUser(String userInput) throws SQLException, ClassNotFoundException {
         if (conn == null) {
             getConnection();
         }
 
+        boolean found = checkIfUserExists(userInput);
 
-        try {
-            String sql_delete_command = "DELETE FROM user WHERE EMAIL = ?";
 
-            //giving an error however when I type any other name except "user"
-            //the code gives an error of array out of bounds
+        if (found) {
+            try {
+                String sql_delete_command = "DELETE FROM user WHERE email = ?";
 
-            PreparedStatement prep = conn.prepareStatement(sql_delete_command);
-            prep.setString(1,user_input);
-            prep.executeUpdate();
-            conn.close();
-            System.out.println("Entry has been deleted. Please check the database to verify.");
-        } catch (SQLException ex){
-            System.out.println(ex.toString());
-        }
+                //giving an error however when I type any other name except "user"
+                //the code gives an error of array out of bounds
 
+                PreparedStatement prep = conn.prepareStatement(sql_delete_command);
+                prep.setString(1,userInput);
+                prep.executeUpdate();
+                conn.close();
+                System.out.println("Entry has been deleted. Please check the database to verify.");
+            } catch (SQLException ex){
+                System.out.println(ex.toString());
+            }
+            } else {
+                System.out.println("Invalid Entry!!");
+                System.out.println("This is the database. Please check again!");
+                System.out.println("");
+            }
     }
 
     /**
@@ -148,47 +164,76 @@ public class Database {
     /**
      modifyUser function modifies all the required fields of a user. For example, changes the first name, lastname, middle name, email and phone number
      **/
-    public static void modifyUser(String id, String firstName, String middleName, String lastName, String email, String phoneNumber) throws SQLException, ClassNotFoundException {
+    public static void modifyUser(String id,String email, String firstName, String middleName, String lastName, String phoneNumber) throws SQLException, ClassNotFoundException {
         if (conn == null || conn.isClosed()) {
             getConnection();
         }
-
-        String sql_replace_command =
-                "UPDATE user SET firstName = ? , middleName = ? , lastName = ? , email = ? , phoneNumber = ? WHERE id = ?";
-        PreparedStatement prep = conn.prepareStatement(sql_replace_command);
-        prep.setString(6, id);
-        prep.setString(1, firstName);
-        prep.setString(2, middleName);
-        prep.setString(3, lastName);
-        prep.setString(4, email);
-        prep.setString(5, phoneNumber);
-        prep.execute();
-        System.out.println("Entry has been modified....");
+            String sql_replace_command =
+                    "UPDATE user SET email = ?, firstName = ? , middleName = ? , lastName = ?, phoneNumber = ? WHERE id = ?";
+            PreparedStatement prep = conn.prepareStatement(sql_replace_command);
+            prep.setString(6, id);
+            prep.setString(1, email);
+            prep.setString(2, firstName);
+            prep.setString(3, middleName);
+            prep.setString(4, lastName);
+            prep.setString(5, phoneNumber);
+            prep.execute();
+            System.out.println("Entry has been modified....");
     }
+
+    /**
+     checkIfUserExists function checks if the entry really exists in a database. If not, it returns false.
+     **/
+    public static boolean checkIfUserExists(String email) throws SQLException, ClassNotFoundException {
+        if (conn == null) {
+            getConnection();
+        }
+
+        String query = "SELECT * FROM user WHERE email LIKE ?";
+        PreparedStatement pst = conn.prepareStatement(query);
+        pst.setString(1, email);
+        ResultSet rs = pst.executeQuery();
+        if(rs.next()) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
 
     /**
      modifyEntry function allows user to interact with the database so that the user can modify a user.
      **/
-    public static void modifyEntry() {
+    public static void modifyEntry() throws SQLException, ClassNotFoundException {
         Scanner input = new Scanner(System.in);
-        System.out.print("Please select the ID from the table you want to modify: ");
+        System.out.print("Please select the email from the table you want to modify: ");
         String user_input = input.next();
-        System.out.print("Please enter the new first name of the user: ");
-        String firstName = input.next();
-        System.out.print("Please enter the new middle name of the user: ");
-        String middleName = input.next();
-        System.out.print("Please enter the new last name of the user: ");
-        String lastName = input.next();
-        System.out.print("Please enter the new email of the user: ");
-        String email = input.next();
-        System.out.print("Please enter the new phone number of the user: ");
-        String phoneNumber = input.next();
-        try {
-            modifyUser(user_input,firstName,middleName,lastName,email,phoneNumber);
-        }
-        catch (ClassNotFoundException | SQLException cex){}
+        boolean found = checkIfUserExists(user_input);
 
+        if(found) {
+            System.out.println("Please select the id of the user: ");
+            String id = input.next();
+            System.out.print("Please enter the new first name of the user: ");
+            String firstName = input.next();
+            System.out.print("Please enter the new middle name of the user: ");
+            String middleName = input.next();
+            System.out.print("Please enter the new last name of the user: ");
+            String lastName = input.next();
+            System.out.print("Please enter the new email of the user: ");
+            String email = input.next();
+            System.out.print("Please enter the new phone number of the user: ");
+            String phoneNumber = input.next();
+            modifyUser(id,email,firstName,middleName,lastName,phoneNumber);
+            System.out.println("User has been modified. Please check the database to verify...");
+        }
+        else {
+            System.out.println("Invalid Entry!!");
+            System.out.println("This is the database. Please check again!");
+            System.out.println("");
+        }
     }
+
 
     /**
      printEntries is a function which prints all the fields in the database so that the user is aware of the fields he/she is deleting or modifying.
