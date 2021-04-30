@@ -69,10 +69,9 @@ public class App extends Database {
                     System.out.println("");
                     test.printEntries();
                     System.out.println("");
-                    System.out.println("These are all the users listed in the database. Please fill out the following information to add a user...");
+                    System.out.println("These are all the users listed in the database. Please fill out the following information to modify a user...");
                     System.out.println("");
                     modifyEntry();
-                    System.out.println("User has been modified. Please check the database to verify...");
                     System.out.println("");
                     test.printEntries();
                 }
